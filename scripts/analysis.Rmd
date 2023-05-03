@@ -1,30 +1,178 @@
 ---
-title: "analysis"
-output: html_document
+title: "analysis n400"
+output:
+  html_document: default
+  pdf_document: default
 date: '2023-05-03'
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-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erv
+```{r}
+library(dplyr)
+library(lmerTest)
+library("Hmisc")
+library(performance)
+library(ggplot2)
+library(interactions)
+#library(simr)
+#library("rstan")
+#library(multcomp)
+library(Rmisc)
+library(emmeans)
+library(lsmeans)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+setwd('//Users/lijiaxuan/Desktop/LSCI253M/data')
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+expt_data_n400 <- read.csv('n400_entropy.csv', stringsAsFactors=FALSE, header=T)
+expt_data_p600 <-read.csv('p600_entropy.csv', stringsAsFactors=FALSE, header=T)
 
-```{r cars}
-summary(cars)
+#########REJECT TRIALS WITH INCORRECT RESPONSE###########
+expt_data_n400 <- subset(expt_data_n400,expt_data_n400$accuracy == 1)
+expt_data_p600 <- subset(expt_data_p600,expt_data_p600$accuracy == 1)
+####################### Contrast coding for categorical variables #######################
+
+###backward difference coding for cloze ####
+
+expt_data_n400=expt_data_n400%>%
+  mutate(cloze=factor(cloze, labels=c("anomalous", "low.cloze", "high.cloze")))
+expt_data_n400=expt_data_n400%>%
+  mutate(constraint=factor(constraint, labels=c("low.constraint", "high.constraint")))
+expt_data_n400$contrast_unexpected=0
+expt_data_n400$contrast_unexpected[expt_data_n400$condition%in%c("LC.UNEXP.VB", "LC.UNEXP.CL")]=-1
+expt_data_n400$contrast_unexpected[expt_data_n400$condition%in%c("HC.UNEXP.VB", "HC.UNEXP.CL")]=1
+
+expt_data_p600=expt_data_p600%>%
+  mutate(cloze=factor(cloze, labels=c("anomalous", "low.cloze", "high.cloze")))
+expt_data_p600=expt_data_p600%>%
+  mutate(constraint=factor(constraint, labels=c("low.constraint", "high.constraint")))
+expt_data_p600$contrast_unexpected=0
+expt_data_p600$contrast_unexpected[expt_data_p600$condition%in%c("LC.UNEXP.VB", "LC.UNEXP.CL")]=-1
+expt_data_p600$contrast_unexpected[expt_data_p600$condition%in%c("HC.UNEXP.VB", "HC.UNEXP.CL")]=1
+
+
+
+#########split data#####################
+expt_data_n400_cl <- subset(expt_data_n400,expt_data_n400$type == 1)
+expt_data_n400_vb <- subset(expt_data_n400,expt_data_n400$type == 0)
+expt_data_p600_cl <- subset(expt_data_p600,expt_data_p600$type == 1)
+expt_data_p600_vb <- subset(expt_data_p600,expt_data_p600$type == 0)
+
 ```
 
-## Including Plots
+```{r}
+##visualization
+#averaged ERP amplitude across conditions in N400 and PNP time windows in verb and classifier contexts
+expt_data_n400_post_cl <-subset(expt_data_n400_cl,expt_data_n400_cl$region=='mid_posterior')
+expt_data_n400_post_vb <-subset(expt_data_n400_vb,expt_data_n400_vb$region=='mid_posterior')
 
-You can also embed plots, for example:
+post_cl <- summarySEwithin(expt_data_n400_post_cl, measurevar="amplitude", withinvars = "condition",idvar = "subject")
+post_vb <- summarySEwithin(expt_data_n400_post_vb, measurevar="amplitude", withinvars = "condition",idvar = "subject")
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+##plot with within-subject error bars
+ggplot(post_cl) +
+  geom_bar( aes(x=condition, y=amplitude,fill=condition), stat="identity",alpha = 0.7) +
+  geom_errorbar( aes(x=condition, ymin=amplitude-se, ymax=amplitude+se), width=0.4, colour="grey", alpha=0.9, size=1.3) +
+  ggtitle('Classifier: Mid-posterior Region (300-500ms) ') +
+  labs(y = expression(paste('Averaged ERPs to nouns (',mu, 'V)')),x = 'conditions',color = 'conditions') +
+  scale_fill_manual(values=c('steelblue','#E69F00','#31a354','#56B4E9','lightgreen')) 
+ggsave(filename ='n400_posterior_cl.png',plot = last_plot())
+
+ggplot(post_vb) +
+  geom_bar( aes(x=condition, y=amplitude,fill=condition), stat="identity",alpha=0.7) +
+  geom_errorbar( aes(x=condition, ymin=amplitude-se, ymax=amplitude+se), width=0.4, colour="grey", alpha=0.9, size=1.3) +
+  ggtitle('Verb: Mid-posterior Region (300-500ms)') +
+  labs(y = expression(paste('Averaged ERPs to nouns (',mu, 'V)')),x = 'conditions',color = 'conditions') +
+  scale_fill_manual(values=c('steelblue','#E69F00','#31a354','#56B4E9','lightgreen')) 
+ggsave(filename ='n400_posterior_vb.png',plot = last_plot())
+
+expt_data_p600_post_cl <-subset(expt_data_p600_cl,expt_data_p600_cl$region=='mid_posterior')
+expt_data_p600_post_vb <-subset(expt_data_p600_vb,expt_data_p600_vb$region=='mid_posterior')
+
+post_p600_cl <- summarySEwithin(expt_data_p600_post_cl, measurevar="amplitude", withinvars = "condition",idvar = "subject")
+post_p600_vb <- summarySEwithin(expt_data_p600_post_vb, measurevar="amplitude", withinvars = "condition",idvar = "subject")
+
+####plot anterior region for PNP
+expt_data_n400_post_cl <-subset(expt_data_n400_cl,expt_data_n400_cl$region=='mid_posterior')
+expt_data_n400_post_vb <-subset(expt_data_n400_vb,expt_data_n400_vb$region=='mid_posterior')
+
+post_cl <- summarySEwithin(expt_data_n400_post_cl, measurevar="amplitude", withinvars = "condition",idvar = "subject")
+post_vb <- summarySEwithin(expt_data_n400_post_vb, measurevar="amplitude", withinvars = "condition",idvar = "subject")
+##plot with within-subject error bars
+##plot with within-subject error bars
+ggplot(post_p600_cl) +
+  geom_bar( aes(x=condition, y=amplitude,fill=condition), stat="identity",alpha=0.7) +
+  geom_errorbar( aes(x=condition, ymin=amplitude-se, ymax=amplitude+se), width=0.4, colour="grey", alpha=0.9, size=1.3) +
+  ggtitle('Classifier: Anterior Region (600-1000ms)') +
+  labs(y = expression(paste('Averaged ERPs to nouns (',mu, 'V)')),x = 'conditions',color = 'conditions') +
+  scale_fill_manual(values=c('steelblue','#E69F00','#31a354','#56B4E9','lightgreen')) 
+ggsave(filename ='p600_anterior_cl.png',plot = last_plot())
+
+ggplot(post_p600_vb) +
+  geom_bar( aes(x=condition, y=amplitude,fill=condition), stat="identity",alpha=0.7) +
+  geom_errorbar( aes(x=condition, ymin=amplitude-se, ymax=amplitude+se), width=0.4, colour="grey", alpha=0.9, size=1.3) +
+  ggtitle('Verb: Anterior Region (600-1000ms)') +
+  labs(y = expression(paste('Averaged ERPs to nouns (',mu, 'V)')),x = 'conditions',color = 'conditions') +
+  scale_fill_manual(values=c('steelblue','#E69F00','#31a354','#56B4E9','lightgreen')) 
+ggsave(filename ='p600_anterior_vb.png',plot = last_plot())
+
+```
+```{r}
+###correlation
+##define contextual constraint in three ways and correlate with frontal PNP data
+data_frontal = subset(expt_data_p600, expt_data_p600$region == "anterior" & expt_data_p600$contrast_unexpected!=0)
+
+ggplot(data = data_frontal, mapping = aes(x = maxcloze,y = amplitude)) +
+  geom_point() + 
+  geom_smooth(method = "glm") 
+
+ggplot(data = data_frontal, mapping = aes(x = rating,y = amplitude)) +
+  geom_point() + 
+  geom_smooth(method = "glm")
+
+ggplot(data = data_frontal, mapping = aes(x = entropy,y = amplitude)) +
+  geom_point() + 
+  geom_smooth(method = "glm")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+rcorr(data_frontal$maxcloze,data_frontal$amplitude)
+rcorr(data_frontal$rating,data_frontal$amplitude)
+rcorr(data_frontal$entropy,data_frontal$amplitude)
+```
+
+```{r}
+##anova model
+aov <- aov(amplitude ~ contrast_unexpected, data = data_frontal)
+summary(aov)
+
+data_frontal_cl = subset(data_frontal, data_frontal$type == 1)
+data_frontal_vb = subset(data_frontal, data_frontal$type == 0)
+
+aov_cl <- aov(amplitude ~ contrast_unexpected, data = data_frontal_cl)
+summary(aov_cl)
+
+aov_vb <- aov(amplitude ~ contrast_unexpected, data = data_frontal_vb)
+summary(aov_vb)
+```
+
+```{r}
+check_model(aov)
+```
+
+```{r}
+###a lmer model
+###selected 9 region################
+expt_data_p600_selected <-subset(expt_data_p600,expt_data_p600$region!='parietal')
+levels(expt_data_p600_selected$cloze)
+levels(expt_data_p600_selected$type)
+
+p600_select.m0 <- lmer(amplitude ~  type*contrast_unexpected + (1 + contrast_unexpected + type |subject) +(1|itemnum),
+                       data=expt_data_p600_selected)
+summary(p600_select.m0)
+```
+
+```{r}
+interact_plot(p600_select.m0, pred = contrast_unexpected, modx = type)
+```
