@@ -1,0 +1,93 @@
+---
+title: "plots"
+output:
+  html_document: default
+  pdf_document: default
+date: '2023-05-10'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r install packages}
+library(ggplot2)
+library(dplyr)
+library(interactions)
+library(ggeffects)
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+```
+
+read in csv data
+
+```{r read file, echo=FALSE}
+data <- read.csv('example_data_for_visualization.csv')
+```
+
+density plot: distribution of vowel duration by gender
+```{r densityplot}
+data %>% ggplot(aes(x = vdur,group = gender,
+                                    fill = gender,
+                                    colour = gender))+
+  geom_density(alpha = 0.5) +
+theme(text = element_text(size = 20)) ##change text size density_plot
+
+```
+scatterplot: scatterplot between speaking rate and user f0.
+```{r plot}
+##scatter plot
+scatter_plot <- data %>% ggplot(aes(x = spk_rate, y = usef0))+ geom_point(size = 2) +
+geom_smooth(method = "glm") + #adding a smoothed line theme(axis.text=element_text(size=12),
+theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold")) +
+  xlab("speaking rate") + ylab("f0)")
+scatter_plot
+```
+
+```{r interaction}
+# Plot
+data %>%
+  ggplot( aes(x=label, y=vot, fill=label)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+   theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    )+
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+```
+
+```{r boxplot}
+# Boxplot
+data %>%
+  ggplot( aes(x=label, y=vot, fill=label)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6, option="A") +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Basic boxplot") +
+    xlab("")
+```
+
+```{r violin}
+# Violin basic
+data %>%
+  ggplot( aes(x=label, y=vot, fill=label)) +
+    geom_violin() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6, option="A") +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("Violin chart") +
+    xlab("")
+```
