@@ -13,8 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r install packages}
 library(ggplot2)
 library(dplyr)
-library(interactions)
-library(ggeffects)
 library(tidyverse)
 library(hrbrthemes)
 library(viridis)
@@ -27,7 +25,7 @@ data <- read.csv('example_data_for_visualization.csv')
 ```
 
 density plot: distribution of vowel duration by gender
-```{r densityplot}
+```{r densityplot, fig.cap = paste("Density distribution of vowel duration by gender")}
 data %>% ggplot(aes(x = vdur,group = gender,
                                     fill = gender,
                                     colour = gender))+
@@ -35,18 +33,19 @@ data %>% ggplot(aes(x = vdur,group = gender,
 theme(text = element_text(size = 20)) ##change text size density_plot
 
 ```
-scatterplot: scatterplot between speaking rate and user f0.
-```{r plot}
+
+
+scatterplot: scatterplot between speaking rate and F0.
+```{r plot fig.cap = "Relationship between speaking rate and useF0"}
 ##scatter plot
-scatter_plot <- data %>% ggplot(aes(x = spk_rate, y = usef0))+ geom_point(size = 2) +
+data %>% ggplot(aes(x = spk_rate, y = usef0))+ geom_point(size = 2) +
 geom_smooth(method = "glm") + #adding a smoothed line theme(axis.text=element_text(size=12),
 theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold")) +
-  xlab("speaking rate") + ylab("f0)")
-scatter_plot
+  xlab("speaking rate") + ylab("f0")
 ```
 
-```{r interaction}
+```{r box, fig.cap = "A boxplot with jitter VOT across different word labels"}
 # Plot
 data %>%
   ggplot( aes(x=label, y=vot, fill=label)) +
@@ -62,7 +61,9 @@ data %>%
     xlab("")
 ```
 
-```{r boxplot}
+
+
+```{r boxplot, fig.cap = "Boxplot of VOT across different word labels"}
 # Boxplot
 data %>%
   ggplot( aes(x=label, y=vot, fill=label)) +
@@ -77,7 +78,12 @@ data %>%
     xlab("")
 ```
 
-```{r violin}
+```{r barplot, fig.cap="mean VOT across labels"}
+ggplot(data, aes(x=label, y=vot)) + 
+  geom_bar(stat = "identity")
+```  
+  
+```{r violin, fig.cap = "Violin plot of VOT across different word labels"}
 # Violin basic
 data %>%
   ggplot( aes(x=label, y=vot, fill=label)) +
@@ -91,3 +97,11 @@ data %>%
     ggtitle("Violin chart") +
     xlab("")
 ```
+
+```{r hex, fig.cap='distribution of usef0 across wdur'}
+ggplot(data, aes(x=wdur, y=usef0) ) +
+  geom_hex(bins=70) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+```
+
