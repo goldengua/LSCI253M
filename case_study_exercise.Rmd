@@ -337,4 +337,5 @@ dat_test <-subset(exp1, (dat$Block ==4) & (dat$Error == 0))
 m1 <- lmer(AdjustedRT ~ Condition + (1 + Condition|WorkerId) + (1+Condition|Word), data=dat_test)
 summary(m1)
 
+## Jiaxuan: great answers throughout! Only one comment: the last model did not converge. Try simplify the random effects structure or change the optimizer? 
 ```
